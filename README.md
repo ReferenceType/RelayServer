@@ -1,5 +1,5 @@
 # RelayServer
-This is a the relay server component for the P2P network system, which is required the use the P2PVideocall application.
+This is a the relay server component for the P2P network system, which is required to use the P2PVideocall application.
 Its a simple console app where you can see stlatistics on browser. It is very lightweight.
 
 I use this app with port forwarding on my router and i bound my IP to a dynamic dns which is provided freely by NoIp.com. 
