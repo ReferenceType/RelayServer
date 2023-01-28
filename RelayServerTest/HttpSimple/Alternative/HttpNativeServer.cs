@@ -15,9 +15,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace RelayServer
+namespace RelayServer.HttpSimple.Alternative
 {
-    internal class HttpSimpleVisuals
+    internal class HttpNativeServer
     {
         HttpListener listener = new HttpListener();
         private SecureProtoRelayServer? server;
@@ -37,22 +37,23 @@ namespace RelayServer
         private ConcurrentDictionary<IPEndPoint, UdpStatistics> udpSessionStats;
         private GeneralStats generalStatJsonObject;
 
-        public HttpSimpleVisuals(SecureProtoRelayServer s)
+        private int portHttp;
+        public HttpNativeServer(SecureProtoRelayServer s, int porthttp)
         {
             ArgumentNullException.ThrowIfNull(s);
-            this.server = s;
+            server = s;
+            portHttp = porthttp;
 
-            
         }
 
-       
+
 
         public void BeginService()
         {
             //>netsh http add iplisten ipaddress=0.0.0.0:20012
             //netsh http add urlacl url=http://*:20012/ user=everyone
-            listener.Prefixes.Add("http://*:20012/");
-            listener.Prefixes.Add("http://*:20012/generalstats/");
+            listener.Prefixes.Add(string.Format("http://*:{0}/", portHttp.ToString()));
+            listener.Prefixes.Add(string.Format("http://*:{0}/generalstats/", portHttp.ToString()));
 
             listener.Start();
 
@@ -70,11 +71,13 @@ namespace RelayServer
                         }
                         else if (req.RawUrl.Equals("/text", StringComparison.OrdinalIgnoreCase))
                         {
-                            PreparePrettyJsonPageResponse(context);
+                            PrepareTextResponse(context);
+
                         }
                         else
                         {
-                            PrepareTextResponse(context);
+                            PrepareDynamicTextResponse(context);
+
 
                         }
                     }
@@ -88,7 +91,7 @@ namespace RelayServer
         {
             using HttpListenerResponse resp = context.Response;
             resp.Headers.Set("Content-Type", "text/html");
-
+            resp.Headers.Set("Access-Control-Allow-Origin", "*");
             Update();
 
             string data =
@@ -118,13 +121,26 @@ namespace RelayServer
             using Stream stream = resp2.OutputStream;
             stream.Write(buffer_, 0, buffer_.Length);
         }
-        private void PreparePrettyJsonPageResponse(HttpListenerContext context)
+        private void PrepareDynamicTextResponse(HttpListenerContext context)
         {
             using HttpListenerResponse resp2 = context.Response;
 
             resp2.Headers.Set("Content-Type", "text/html");
             resp2.Headers.Set("Access-Control-Allow-Origin", "*");
-            byte[] buffer_ = Encoding.UTF8.GetBytes(Resources.StatisticsPage);
+            byte[] buffer_ = Encoding.UTF8.GetBytes(PageResources.TextVisualizePage);
+
+            resp2.ContentLength64 = buffer_.Length;
+            using Stream stream = resp2.OutputStream;
+            stream.Write(buffer_, 0, buffer_.Length);
+        }
+
+        private void PrepareAutoTextPageResponse(HttpListenerContext context)
+        {
+            using HttpListenerResponse resp2 = context.Response;
+
+            resp2.Headers.Set("Content-Type", "text/html");
+            resp2.Headers.Set("Access-Control-Allow-Origin", "*");
+            byte[] buffer_ = Encoding.UTF8.GetBytes(PageResources.TextVisualizePage);
 
             resp2.ContentLength64 = buffer_.Length;
             using Stream stream = resp2.OutputStream;
@@ -138,8 +154,18 @@ namespace RelayServer
             if ((DateTime.Now - LastUpdate).TotalMilliseconds < 900)
                 return false;
             LastUpdate = DateTime.Now;
-            server.GetTcpStatistics(out TcpGeneralStats, out tctSessionStats);
-            server.GetUdpStatistics(out udpGeneralStats, out udpSessionStats);
+            try
+            {
+                server.GetTcpStatistics(out var tcpGeneralStats, out var tcpSessionStats);
+                server.GetUdpStatistics(out var udpGeneralStats, out var udpSessionStats);
+
+                TcpGeneralStats = tcpGeneralStats;
+                tctSessionStats = tcpSessionStats;
+                this.udpGeneralStats = udpGeneralStats;
+                this.udpSessionStats = udpSessionStats;
+            }
+            catch (Exception ex) { return false; }
+
             return true;
         }
 
@@ -159,7 +185,7 @@ namespace RelayServer
                     UdpGeneralStats = udpGeneralStats.Stringify()
                 };
             }
-            
+
             return GetJson(generalStatJsonObject);
 
         }
@@ -192,7 +218,7 @@ namespace RelayServer
 
         private string GetJson<T>(T data) where T : class
         {
-            return JsonSerializer.Serialize<T>(data, new JsonSerializerOptions() { WriteIndented = true });
+            return JsonSerializer.Serialize(data, new JsonSerializerOptions() { WriteIndented = true });
         }
 
         public class StatisticsJson

@@ -11,7 +11,8 @@ namespace RelayServer
     {
         private static Process process;
         private static TimeSpan lastProctime;
-        private static DateTime lastRequestTime;
+        private static DateTime lastRequestTimeCpu;
+        private static DateTime lastRequestTimeMemory;
         private static string lastCpuUsage;
         private static string lastMemoryUsage;
 
@@ -19,18 +20,19 @@ namespace RelayServer
         {
             process = Process.GetCurrentProcess();
             lastProctime=process.TotalProcessorTime;
-            lastRequestTime = DateTime.Now;
+            lastRequestTimeCpu = DateTime.Now;
+            lastRequestTimeMemory = DateTime.Now;
         }
         public static string GetCpuUsage()
         {
-            if((DateTime.Now - lastRequestTime).TotalMilliseconds < 900)
+            if((DateTime.Now - lastRequestTimeCpu).TotalMilliseconds < 500)
             {
                 return lastCpuUsage;
             }
             var currentProcessorTime = process.TotalProcessorTime;
             var currentTimeStamp = DateTime.Now;
-            double CPUUsage = (currentProcessorTime.TotalMilliseconds - lastProctime.TotalMilliseconds) / currentTimeStamp.Subtract(lastRequestTime).TotalMilliseconds / Convert.ToDouble(Environment.ProcessorCount);
-            lastRequestTime = currentTimeStamp;
+            double CPUUsage = (currentProcessorTime.TotalMilliseconds - lastProctime.TotalMilliseconds) / currentTimeStamp.Subtract(lastRequestTimeCpu).TotalMilliseconds / Convert.ToDouble(Environment.ProcessorCount);
+            lastRequestTimeCpu = currentTimeStamp;
             lastProctime = currentProcessorTime;
             lastCpuUsage = (CPUUsage * 100).ToString("N3") + "%";
             return lastCpuUsage;
@@ -39,12 +41,13 @@ namespace RelayServer
 
         public static string GetMemoryUsage()
         {
-            if ((DateTime.Now - lastRequestTime).TotalMilliseconds < 900)
+            if ((DateTime.Now - lastRequestTimeMemory).TotalMilliseconds < 500)
             {
                 return lastMemoryUsage;
             }
-
-            process = Process.GetCurrentProcess();
+            lastRequestTimeMemory=DateTime.Now;
+            //process = Process.GetCurrentProcess();
+            process.Refresh();
             const double f = 1024.0 * 1024.0;
             lastMemoryUsage = (process.WorkingSet64 / f).ToString("N3") + "MB";
             return  lastMemoryUsage;

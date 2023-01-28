@@ -1,0 +1,6 @@
+﻿{
+  "PortRelay": 20011,
+  "PortHttp": 20012,
+  "UpdateProxy": false,
+  "ProxyUri": "http://localhost:8001/ip"
+}

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <Reference Include="NetworkLibrary">
-      <HintPath>..\..\..\..\Desktop\NetworkExperiments\NetworkLibrary\bin\Release\netstandard2.0\NetworkLibrary.dll</HintPath>
+      <HintPath>..\..\..\..\Desktop\NetworkExperiments\Protobuff\bin\Release\netstandard2.0\NetworkLibrary.dll</HintPath>
     </Reference>
     <Reference Include="Protobuff">
       <HintPath>..\..\..\..\Desktop\NetworkExperiments\Protobuff\bin\Release\netstandard2.0\Protobuff.dll</HintPath>
@@ -23,6 +23,9 @@
 
   <ItemGroup>
     <None Update="client.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="server.pfx">
