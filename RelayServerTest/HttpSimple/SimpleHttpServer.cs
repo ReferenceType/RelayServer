@@ -1,4 +1,5 @@
-﻿using NetworkLibrary.Components.Statistics;
+﻿using NetworkLibrary.Components;
+using NetworkLibrary.Components.Statistics;
 using NetworkLibrary.TCP.Base;
 using NetworkLibrary.Utils;
 using Protobuff.P2P;
@@ -30,20 +31,58 @@ namespace RelayServer.HttpSimple
 
         private SecureProtoRelayServer server;
         private AsyncTcpServer httpMiniServer;
-        private SharerdMemoryStreamPool streamPool =  new SharerdMemoryStreamPool();
-        public SimpleHttpServer(SecureProtoRelayServer s, int porthttp) 
+        private SharerdMemoryStreamPool streamPool = new SharerdMemoryStreamPool();
+        byte[] cachedSendArray = new byte[500];
+
+        public SimpleHttpServer(SecureProtoRelayServer s, int porthttp)
         {
             server = s;
 
             var mainPageHeaderBytes = Encoding.ASCII.GetBytes(HttpHeaderUtil.MainPageHeader);
-            var mainPageBodybytes = Encoding.UTF8.GetBytes(PageResources.TextVisualizePage);
+            var mainPageBodybytes = Encoding.ASCII.GetBytes(PageResources.TextVisualizePage);
             mainPageBytes = mainPageHeaderBytes.Concat(mainPageBodybytes).ToArray();
-            
+
             httpMiniServer = new AsyncTcpServer(porthttp);
-            httpMiniServer.GatherConfig = ScatterGatherConfig.UseQueue;
+            httpMiniServer.GatherConfig = ScatterGatherConfig.UseBuffer;
             httpMiniServer.MaxIndexedMemoryPerClient = 128000;
             httpMiniServer.OnBytesReceived += ServerBytesReceived;
             httpMiniServer.StartServer();
+
+        }
+
+        [ThreadStatic]
+        static PooledMemoryStream stream;
+
+        int len1 = textPagePart1.Length;
+        int len2 = textPagePart2.Length;
+        byte[] textPagePart1Bytes = Encoding.ASCII.GetBytes(textPagePart1);
+        byte[] textPagePart2Bytes = Encoding.ASCII.GetBytes(textPagePart2);
+
+        PooledMemoryStream GetTextResponse(string data)
+        {
+            int bodyLen = data.Length + len1 + len2;
+           
+            if(stream == null)
+            {
+                stream = new PooledMemoryStream();
+                // ensure capcacity;
+                stream.Position = 5000;
+            }
+            // write header
+            stream.Position = 0;
+            HttpHeaderUtil.GetASCIIHeader(stream,bodyLen);
+
+            // write static part 1 of the body
+            stream.Write(textPagePart1Bytes);
+
+            // write dynamic part of body
+            Encoding.ASCII.GetBytes(data,0,data.Length,stream.GetBuffer(),(int)stream.Position);
+            stream.Position += data.Length;
+
+            // write static part 2 of body
+            stream.Write(textPagePart2Bytes);
+
+            return stream;
         }
         private void ServerBytesReceived(in Guid guid, byte[] bytes, int offset, int count)
         {
@@ -65,13 +104,9 @@ namespace RelayServer.HttpSimple
                            TcpGeneralStats.ToString() + "\n\n" +
                            udpGeneralStats.ToString();
 
-                    string page = textPagePart1 + data + textPagePart2;
-                    byte[] body = Encoding.UTF8.GetBytes(page);
-                    byte[] header = HttpHeaderUtil.GetASCIIHeader(body.Length);
                     
-                    httpMiniServer.SendBytesToClient(in guid, header);
-                    httpMiniServer.SendBytesToClient(in guid, body);
-                    
+                    var stream = GetTextResponse(data);
+                    httpMiniServer.SendBytesToClient(in guid,stream.GetBuffer(),0,(int)stream.Position );
                 }
             } catch { }
            

@@ -24,12 +24,7 @@ namespace RelayServer.HttpSimple.Alternative
         string p = "<html><body><body style=\"background-color:black;\"><font color=\"white\"><pre style=\"font-size: large; color: white;\">{0}</pre>";
         string page = "<script>setTimeout(function(){ location.reload();},1000);</script></body></html>";
 
-        PerformanceCounter cpuCounter;
-        PerformanceCounter ramCounter;
-
-        PerformanceCounter total_cpu; //= new PerformanceCounter("Process", "% Processor Time", "_Total");
-        PerformanceCounter process_cpu; //= new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
-
+      
         DateTime LastUpdate = DateTime.Now.AddSeconds(-2);
         private TcpStatistics TcpGeneralStats;
         private UdpStatistics udpGeneralStats;
