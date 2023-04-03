@@ -33,13 +33,13 @@ namespace RelayServer.HttpSimple
         private AsyncTcpServer httpMiniServer;
         private SharerdMemoryStreamPool streamPool = new SharerdMemoryStreamPool();
         byte[] cachedSendArray = new byte[500];
-
+        private readonly string page;
         public SimpleHttpServer(SecureProtoRelayServer s, int porthttp)
         {
             server = s;
-
+            page = PageResources.TextVisualizePage.Replace("20012", porthttp.ToString());
             var mainPageHeaderBytes = Encoding.ASCII.GetBytes(HttpHeaderUtil.MainPageHeader);
-            var mainPageBodybytes = Encoding.ASCII.GetBytes(PageResources.TextVisualizePage);
+            var mainPageBodybytes = Encoding.ASCII.GetBytes(page);
             mainPageBytes = mainPageHeaderBytes.Concat(mainPageBodybytes).ToArray();
 
             httpMiniServer = new AsyncTcpServer(porthttp);
