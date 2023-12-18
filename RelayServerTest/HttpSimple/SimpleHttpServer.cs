@@ -2,7 +2,6 @@
 using NetworkLibrary.Components.Statistics;
 using NetworkLibrary.TCP.Base;
 using NetworkLibrary.Utils;
-using Protobuff.P2P;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,7 +11,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using static RelayServer.HttpSimple.Alternative.HttpNativeServer;
 
 namespace RelayServer.HttpSimple
 {
@@ -29,12 +27,12 @@ namespace RelayServer.HttpSimple
         private ConcurrentDictionary<Guid, TcpStatistics> tcpSessionStats;
         private ConcurrentDictionary<IPEndPoint, UdpStatistics> udpSessionStats;
 
-        private SecureProtoRelayServer server;
+        private NetworkLibrary.P2P.RelayServer server;
         private AsyncTcpServer httpMiniServer;
         private SharerdMemoryStreamPool streamPool = new SharerdMemoryStreamPool();
         byte[] cachedSendArray = new byte[500];
         private readonly string page;
-        public SimpleHttpServer(SecureProtoRelayServer s, int porthttp)
+        public SimpleHttpServer(NetworkLibrary.P2P.RelayServer s, int porthttp)
         {
             server = s;
             page = PageResources.TextVisualizePage.Replace("20012", porthttp.ToString());
@@ -84,7 +82,7 @@ namespace RelayServer.HttpSimple
 
             return stream;
         }
-        private void ServerBytesReceived(in Guid guid, byte[] bytes, int offset, int count)
+        private void ServerBytesReceived(Guid guid, byte[] bytes, int offset, int count)
         {
             try
             {
@@ -106,7 +104,7 @@ namespace RelayServer.HttpSimple
 
                     
                     var stream = GetTextResponse(data);
-                    httpMiniServer.SendBytesToClient(in guid,stream.GetBuffer(),0,(int)stream.Position );
+                    httpMiniServer.SendBytesToClient(guid,stream.GetBuffer(),0,(int)stream.Position );
                 }
             } catch { }
            

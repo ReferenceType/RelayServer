@@ -17,6 +17,8 @@ namespace RelayServer
         private static string lastMemoryUsage;
         static Stopwatch sw = new Stopwatch();
         static double ProcCount;
+        private static DateTime processStartTime;
+
         static PerformanceStatistics()
         {
             process = Process.GetCurrentProcess();
@@ -24,20 +26,22 @@ namespace RelayServer
             lastRequestTimeCpu = 0;
             lastRequestTimeMemory = 0;
             ProcCount = Convert.ToDouble(Environment.ProcessorCount);
+            processStartTime = process.StartTime;
             sw.Start();
 
         }
+
+       
         public static string GetCpuUsage()
         {
-
             long elapsed = sw.ElapsedMilliseconds;
             long deltaTms = elapsed - lastRequestTimeCpu;
-            if(deltaTms < 900)
+            if (deltaTms < 900)
             {
                 return lastCpuUsage;
             }
             var currentProcessorTime = process.TotalProcessorTime;
-            double CPUUsage = (currentProcessorTime.TotalMilliseconds - lastProctime.TotalMilliseconds) / deltaTms / ProcCount;
+            double CPUUsage = (currentProcessorTime.TotalMilliseconds - lastProctime.TotalMilliseconds) / (deltaTms * ProcCount);
             lastRequestTimeCpu = elapsed;
             lastProctime = currentProcessorTime;
             lastCpuUsage = (CPUUsage * 100).ToString("N3") + "%";
@@ -47,6 +51,9 @@ namespace RelayServer
 
         public static string GetMemoryUsage()
         {
+            const double f = 1024.0 * 1024.0;
+            return (Environment.WorkingSet / f).ToString("N3") + "MB";
+
             long elapsed = sw.ElapsedMilliseconds;
             long deltaTms = elapsed - lastRequestTimeMemory;
             if (deltaTms < 900)
@@ -55,7 +62,6 @@ namespace RelayServer
             }
             lastRequestTimeMemory=elapsed;
             process.Refresh();
-            const double f = 1024.0 * 1024.0;
             lastMemoryUsage = (process.WorkingSet64 / f).ToString("N3") + "MB";
             return  lastMemoryUsage;
 

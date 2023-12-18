@@ -1,6 +1,7 @@
 ﻿{
-  "PortRelay": 20011,
-  "PortHttp": 20012,
+  "ServerName": "Ophelia",
+  "PortRelay": 20020,
+  "PortHttp": 20021,
   "UpdateProxy": false,
   "ProxyUri": "http://localhost:8001/ip"
 }

@@ -3,21 +3,28 @@ using NetworkLibrary.Components;
 using NetworkLibrary.Components.Statistics;
 using NetworkLibrary.Utils;
 using ProtoBuf;
-using Protobuff;
-using Protobuff.P2P;
 using RelayServer;
 using RelayServer.HttpSimple;
 using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace RrlayServerTest
 {
     //KFtyEu7h6E
-    public class Config
+    [JsonSerializable(typeof(Config))]
+    public partial class SourceGenerationContext : JsonSerializerContext
     {
+    }
+    [JsonSerializable(typeof(Config))]
+    public class Config: SourceGenerationContext
+    {
+        public string ServerName { get; set; }
         public int PortRelay { get; set; }
         public int PortHttp { get; set; }
         public bool UpdateProxy { get; set; }
@@ -29,8 +36,16 @@ namespace RrlayServerTest
     {
         static void Main(string[] args)
         {
-            Run();
+            //Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 100000000; i++)
+            {
+                sb.Append("AAAAAAAAAA");
 
+            }
+            File.WriteAllText("Test.txt", sb.ToString());
+            Run();
+          
         }
         static Config config;
         static ManualResetEvent m = new ManualResetEvent(false);
@@ -44,7 +59,6 @@ namespace RrlayServerTest
             if (Environment.UserInteractive)
             {
                 MiniLogger.AllLog += (string str) => Console.WriteLine(str);
-
             }
             AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
 
@@ -54,14 +68,15 @@ namespace RrlayServerTest
             Port = port.ToString();
 
             var scert = new X509Certificate2("server.pfx", "greenpass");
-            var server = new SecureProtoRelayServer(port, scert);
-
+            var server = new NetworkLibrary.P2P.RelayServer(port, scert,config.ServerName);
+            server.StartServer();
             var hserv = new SimpleHttpServer(server, config.PortHttp);
 
             if (config.UpdateProxy)
             {
                 ProxyPeriodicUpdate.PeriodicallyUpdateHttpProxy();
             }
+
             m.WaitOne();
         }
 
@@ -70,15 +85,29 @@ namespace RrlayServerTest
             string ex = ((Exception)e.ExceptionObject).Message + ((Exception)e.ExceptionObject).StackTrace;
             string workingDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             File.WriteAllText(workingDir + "/CrashDump.txt", ex);
-
-           // Process.Start(workingDir+ "/RelayServer.exe");
         }
 
         private static void Configure()
         {
-            string workingDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string txt = File.ReadAllText(workingDir + "/Config.json");
-            config = JsonSerializer.Deserialize<Config>(txt,new JsonSerializerOptions() { AllowTrailingCommas = true});
+            //string workingDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            //string txt = File.ReadAllText(workingDir + "/Config.json");
+            string txt = File.ReadAllText("Config.json");
+            config = JsonSerializer.Deserialize<Config>(txt,new JsonSerializerOptions() { AllowTrailingCommas = true,TypeInfoResolver= SourceGenerationContext.Default });
+
+            //if (true)
+            //{
+            //    config = new Config()
+            //    {
+            //        ServerName = "AA",
+            //        PortRelay = 20020,
+            //        PortHttp = 20021,
+            //        ProxyUri = ""
+            //    };
+            //    return;
+            //}
+            //string workingDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            //string txt = File.ReadAllText(workingDir + "/Config.json");
+            //config = JsonSerializer.Deserialize<Config>(txt,new JsonSerializerOptions() { AllowTrailingCommas = true});
 
            
     }
