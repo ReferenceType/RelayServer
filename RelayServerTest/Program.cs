@@ -36,16 +36,7 @@ namespace RrlayServerTest
     {
         static void Main(string[] args)
         {
-            //Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 100000000; i++)
-            {
-                sb.Append("AAAAAAAAAA");
-
-            }
-            File.WriteAllText("Test.txt", sb.ToString());
             Run();
-          
         }
         static Config config;
         static ManualResetEvent m = new ManualResetEvent(false);
